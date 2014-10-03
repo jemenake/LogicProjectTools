@@ -1,0 +1,53 @@
+@@ -4,6 +4,7 @@
+ import sys
+ import stat
+ import md5
++import pickle
+
+ filesBySize = {}
+
+@@ -67,12 +68,14 @@
+ print 'Found %d sets of potential dupes...' % potentialCount
+ print 'Scanning for real dupes...'
+
++i=0
+ dupes = []
+ for aSet in potentialDupes:
++    i+=1
+     outFiles = []
+     hashes = {}
+     for fileName in aSet:
+-        print 'Scanning file "%s"...' % fileName
++        print 'Scanning %d/%d "%s"...' % (i, potentialCount, fileName)
+         aFile = file(fileName, 'r')
+         hasher = md5.new()
+         while True:
+@@ -85,18 +88,23 @@
+         if hashes.has_key(hashValue):
+             if not len(outFiles):
+                 outFiles.append(hashes[hashValue])
+-            outFiles.append(fileName)
++            hashes[hashValue].append(fileName)
+         else:
+-            hashes[hashValue] = fileName
+-    if len(outFiles):
+-        dupes.append(outFiles)
++            hashes[hashValue] = [fileName]
++    for k in hashes.keys():
++        if len(hashes[k]) > 1:
++            dupes.append(hashes[k])
++
++dupdump = file("dupedump", "w")
++pickle.dump(dupes, dupdump)
++dupdump.close()
+
+ i = 0
+ for d in dupes:
+     print 'Original is %s' % d[0]
+     for f in d[1:]:
+         i = i + 1
+-        print 'Deleting %s' % f
++        print 'Deleting/linking %s' % f
+         os.remove(f)
++        os.link(d[0],f)
+     print
