@@ -6,7 +6,9 @@ import pickle
 from collections import defaultdict
 
 REPOSITORY_BASE = "all_hashed_audio"
-ROOTS = ( "/Users/jemenake", )
+# ROOTS = ( "/Users/jemenake", )
+ROOTS = ( "/Volumes/Old Macintosh HD", "/Volumes/Old Time Machine")
+
 
 def pickle_data(data, pathname):
 	picklefile = file(pathname, "w")
@@ -35,8 +37,9 @@ for rootname in ROOTS:
 		pathnames.extend([ dirpath + "/" + a for a in filenames if want(dirpath + "/" + a)])
 
 	REPOSITORY = rootname + "/" + REPOSITORY_BASE
-	PICKLE_FILE = rootname + "/" + "hash_values.pickle"
+	PICKLE_FILE = REPOSITORY + "/" + "hash_values.pickle"
 
+	print "  creating hash folders..."
 	# Make sure that we have a place to stick all of the links for the hashes
 	ensuredir(REPOSITORY)
 	## Make a two-deep folder tree for holding all of the hashes
@@ -49,15 +52,14 @@ for rootname in ROOTS:
 			dir2 = dir1 + "/" + str(digit2)
 			ensuredir(dir2)
 
+	print "  calcuating hashes..."
 	# Calc the hash-value of every file
 	thehashes = defaultdict(list)
 	hashes_by_pathname = dict()
 	for pathname in pathnames:
 		print pathname
-		fileobj = file(pathname, 'r')
-		hasher = hashlib.md5(fileobj.read())
-		hashValue = hasher.digest()
-		hashValue = hasher.hexdigest()
+
+		hashValue = hashlib.md5(pathname).hexdigest()
 		thehashes[hashValue].append(pathname)
 		basename = os.path.basename(pathname)
 		if basename in hashes_by_pathname.keys() and hashes_by_pathname[basename] != hashValue:
@@ -65,6 +67,7 @@ for rootname in ROOTS:
 
 	pickle_data(thehashes, PICKLE_FILE)
 
+	print "  making the hard-links..."
 	# Make the hash links
 	for hash in thehashes.keys():
 		print hash
