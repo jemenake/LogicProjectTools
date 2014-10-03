@@ -6,6 +6,8 @@ import pickle
 
 REPOSITORY = "/Users/all_hashed_audio"
 
+ROOTS = ( "/Users/jemenake/Desktop/SampleLogicProjects/Flawed2", )
+
 ###
 ### If a directory doesn't exist, create it
 ###
@@ -26,7 +28,7 @@ def want(pathname):
 
 pathnames = list()
 
-for dirname in ( "/Users/jemenake/Desktop/SampleLogicProjects/Flawed2", ):
+for dirname in ROOTS:
 	print 'Scanning directory "%s"....' % dirname
 	for (dirpath, dirnames, filenames) in os.walk(dirname):
 		pathnames.extend([ dirpath + "/" + a for a in filenames if want(dirpath + "/" + a)])
