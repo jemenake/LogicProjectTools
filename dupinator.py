@@ -3,10 +3,15 @@
 import os
 import hashlib
 import pickle
+from collections import defaultdict
 
-REPOSITORY = "/Users/all_hashed_audio"
+REPOSITORY_BASE = "all_hashed_audio"
+ROOTS = ( "/Users/jemenake", )
 
-ROOTS = ( "/Users/jemenake/Desktop/SampleLogicProjects/Flawed2", )
+def pickle_data(data, pathname):
+	picklefile = file(pathname, "w")
+	pickle.dump(data, picklefile)
+	picklefile.close()
 
 ###
 ### If a directory doesn't exist, create it
@@ -19,63 +24,61 @@ def ensuredir(pathname):
 			print "Can't create mandatory directory: " + pathname + " : Does it exist? Do we have permissions?"
 			exit()
 
-
-filesBySize = {}
-
-
 def want(pathname):
 	return pathname.endswith(".aif")
 
 pathnames = list()
 
-for dirname in ROOTS:
-	print 'Scanning directory "%s"....' % dirname
-	for (dirpath, dirnames, filenames) in os.walk(dirname):
+for rootname in ROOTS:
+	print 'Scanning directory "%s"....' % rootname
+	for (dirpath, dirnames, filenames) in os.walk(rootname):
 		pathnames.extend([ dirpath + "/" + a for a in filenames if want(dirpath + "/" + a)])
 
-from collections import defaultdict
-thehashes = defaultdict(list)
+	REPOSITORY = rootname + "/" + REPOSITORY_BASE
+	PICKLE_FILE = rootname + "/" + "hash_values.pickle"
 
-hashes_by_pathname = dict()
+	# Make sure that we have a place to stick all of the links for the hashes
+	ensuredir(REPOSITORY)
+	## Make a two-deep folder tree for holding all of the hashes
+	digits = range(10)
+	digits.extend([ 'a', 'b', 'c', 'd', 'e', 'f' ])
+	for digit1 in digits:
+		dir1 = REPOSITORY + "/" + str(digit1)
+		ensuredir(dir1)
+		for digit2 in digits:
+			dir2 = dir1 + "/" + str(digit2)
+			ensuredir(dir2)
 
-for pathname in pathnames:
-	print pathname
-	fileobj = file(pathname, 'r')
-	hasher = hashlib.md5(fileobj.read())
-	hashValue = hasher.digest()
-	hashValue = hasher.hexdigest()
-	thehashes[hashValue].append(pathname)
-	basename = os.path.basename(pathname)
-	if basename in hashes_by_pathname.keys() and hashes_by_pathname[basename] != hashValue:
-		print "There are multiple files named " + basename + " and they have different hash values!"
+	# Calc the hash-value of every file
+	thehashes = defaultdict(list)
+	hashes_by_pathname = dict()
+	for pathname in pathnames:
+		print pathname
+		fileobj = file(pathname, 'r')
+		hasher = hashlib.md5(fileobj.read())
+		hashValue = hasher.digest()
+		hashValue = hasher.hexdigest()
+		thehashes[hashValue].append(pathname)
+		basename = os.path.basename(pathname)
+		if basename in hashes_by_pathname.keys() and hashes_by_pathname[basename] != hashValue:
+			print "There are multiple files named " + basename + " and they have different hash values!"
 
+	pickle_data(thehashes, PICKLE_FILE)
 
-ensuredir(REPOSITORY)
-
-## Make a two-deep folder tree for holding all of the hashes
-digits = range(10)
-digits.extend([ 'a', 'b', 'c', 'd', 'e', 'f' ])
-for digit1 in digits:
-	dir1 = REPOSITORY + "/" + str(digit1)
-	ensuredir(dir1)
-	for digit2 in digits:
-		dir2 = dir1 + "/" + str(digit2)
-		ensuredir(dir2)
-
-for hash in thehashes.keys():
-	print hash
-	hash_pathname = REPOSITORY + "/" + hash[0] + "/" + hash[1] + "/" + hash
-	# Link the first pathname in our list of files with this hash to a file with the hashvalue
-	if not os.path.isfile(hash_pathname):
-		os.link(thehashes[hash][0], hash_pathname)
-	alias_dir = hash_pathname + ".aliases"
-	ensuredir(alias_dir)
-	for pathname in thehashes[hash]:
-		alias_pathname = alias_dir + "/" + os.path.basename(pathname)
-		if not os.path.isfile(alias_pathname):
-			os.link(hash_pathname, alias_pathname)
-		print "  " + pathname
-
+	# Make the hash links
+	for hash in thehashes.keys():
+		print hash
+		hash_pathname = REPOSITORY + "/" + hash[0] + "/" + hash[1] + "/" + hash
+		# Link the first pathname in our list of files with this hash to a file with the hashvalue
+		if not os.path.isfile(hash_pathname):
+			os.link(thehashes[hash][0], hash_pathname)
+		alias_dir = hash_pathname + ".aliases"
+		ensuredir(alias_dir)
+		for pathname in thehashes[hash]:
+			alias_pathname = alias_dir + "/" + os.path.basename(pathname)
+			if not os.path.isfile(alias_pathname):
+				os.link(hash_pathname, alias_pathname)
+			print "  " + pathname
 
 exit()
 
