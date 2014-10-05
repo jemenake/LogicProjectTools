@@ -25,6 +25,37 @@ logic_projects = list()
 audio_folders = list()
 audio_files = list()
 
+#
+# Scans a .logic project for all of the audio files it references
+#
+# Takes: full pathname to a "*.logic" project folder
+# Returns: list of full pathnames to audio files
+def get_linked_audio_filenames(project_path):
+	pathnames = list()
+	data_pathname = project_path + "/" + "LgDoc" + "/documentData"
+	print "Opening " + data_pathname
+	try:
+		with open (data_pathname, "r") as myfile:
+			data=myfile.read()
+			offset = 0
+			while True:
+				offset = data.find("LFUA", offset)
+				if offset == -1:
+					break
+				filename_start = offset + 10
+				filename_end = data.find("\0", filename_start)
+				path_start = offset + 138
+				path_end = data.find("\0", path_start)
+				filename = data[filename_start:filename_end]
+				path = data[path_start:path_end]
+				pathname = path + "/" + filename
+				pathnames.append(pathname)
+				offset = path_end
+	except:
+		print "Problem reading " + data_pathname
+	return pathnames
+
+
 
 ##########################################
 ##########################################
@@ -124,6 +155,17 @@ def run_checks():
 def main():
 	process_folders(TARGET_FOLDERS)
 	run_checks()
+
+	print "=========="
+	print "Linked audio files"
+	print "=========="
+	for project in logic_projects:
+		print "Checking : " + project
+		project_audio_files = get_linked_audio_filenames(project)
+		for audio_file in project_audio_files:
+			print "  AUDIO: " + audio_file
+
+
 
 if __name__ == "__main__":
 	main()
