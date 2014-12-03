@@ -15,6 +15,7 @@ def pickle_data(data, pathname):
 	pickle.dump(data, picklefile)
 	picklefile.close()
 
+
 ###
 ### If a directory doesn't exist, create it
 ###
@@ -26,9 +27,17 @@ def ensuredir(pathname):
 			print "Can't create mandatory directory: " + pathname + " : Does it exist? Do we have permissions?"
 			exit()
 
+###
+### Do we want this file?
+### (Used to indicate if a file qualifies as an audio file)
+###
 def want(pathname):
 	return pathname.endswith(".aif")
 
+
+###
+###
+###
 pathnames = list()
 
 for rootname in ROOTS:
@@ -120,43 +129,8 @@ del filesBySize
 print 'Found %d sets of potential dupes...' % potentialCount
 print 'Scanning for real dupes...'
 
-i=0
-dupes = []
-for aSet in potentialDupes:
-	i+=1
-	outFiles = []
-	hashes = {}
-	for fileName in aSet:
-		print 'Scanning %d/%d "%s"...' % (i, potentialCount, fileName)
-		aFile = file(fileName, 'r')
-		hasher = hashlib.md5()
-		while True:
-			r = aFile.read(4096)
-			if not len(r):
-				break
-			hasher.update(r)
-		aFile.close()
-		hashValue = hasher.digest()
-		if hashes.has_key(hashValue):
-			if not len(outFiles):
-				outFiles.append(hashes[hashValue])
-			outFiles.append(fileName)
-		else:
-			hashes[hashValue] = [fileName]
-	for k in hashes.keys():
-		if len(hashes[k]) > 1:
-			dupes.append(hashes[k])
 
 dupdump = file("dupedump", "w")
 pickle.dump(dupes, dupdump)
 dupdump.close()
 
-i = 0
-for d in dupes:
-	print 'Original is %s' % d[0]
-	for f in d[1:]:
-		i = i + 1
-		print 'Deleting/linking %s' % f
-		os.remove(f)
-		os.link(d[0],f)
-	print
