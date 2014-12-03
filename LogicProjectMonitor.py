@@ -71,13 +71,13 @@ def get_linked_logic9_audio_filenames(project_path):
 #
 def scan_target_folders(folders):
 	for folder in folders:
-		print "Searching for intact Logic projects in " + folder
+#		print "Searching for intact Logic projects in " + folder
 #		print
 
 		for (dirpath, dirnames, filenames) in walk(folder):
 			for ignore_folder in IGNORE_FOLDERS:
 				if dirpath[:len(ignore_folder)] == ignore_folder:
-					print "Ignoring " + dirpath
+#					print "Ignoring " + dirpath
 					break
 			else:
 				logic9_projects.extend([dirpath + "/" + a for a in dirnames if a[-len(LOGIC9_TARGET_EXT):] == LOGIC9_TARGET_EXT])
