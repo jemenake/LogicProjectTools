@@ -1,11 +1,37 @@
 #! /usr/bin/python
 
+# Derived from dupinator.py.
+#
+# This program takes a list of pathnames to audio files and moves them to a central archive.
+# It replaces the original with a symbolic link to the archived version.
+# The archived version will have several names (all hard-linked): the MD5 hash (with the extension)
+# appended to it, *plus* all names that the file has been archived as.
+#
+# For example:
+#   Audio#123.aif
+# might get archived to:
+#   /all_hashed_audio/a/f/af171f6a82b3caf793d3b3ac3.aif
+#   /all_hashed_audio/a/f/af171f6a82b3caf793d3b3ac3.aliases/Audio#123.aif
+# if the same audio is encountered in a file called:
+#   Audio#987.aif
+# then it will be replaced by a symlink to the MD5-named file and an alias will be added:
+#   /all_hashed_audio/a/f/af171f6a82b3caf793d3b3ac3.aliases/Audio#987.aif
+#
+#
+# WHAT IS THIS FOR?
+#
+# This program is for filesystems where there are a lot of large audio files and there is a
+# high incidence of duplicates. This program allows for a great deal of space to be reclaimed.
+#
+# 2015-04-26 - joe@emenaker.com
+
+
 import os
 import hashlib
 import pickle
 from collections import defaultdict
 
-REPOSITORY_BASE = "all_hashed_audio"
+REPOSITORY_BASE = "/Volumes/Old Time Machine/all_hashed_audio"
 # ROOTS = ( "/Users/jemenake", )
 ROOTS = ("/Volumes/Old Macintosh HD", "/Volumes/Old Time Machine")
 
@@ -28,6 +54,20 @@ def ensuredir(pathname):
 			exit()
 
 ###
+### If a file is in the archive
+###
+def is_in_archive(md5):
+	pathname = get_archive_md5_name(md5)
+	return os.path.isfile(pathname)
+
+###
+### If an archived file with a MD5 is listed with a particular name
+###
+def has_alias(md5, alias):
+	pathname = get_archive_alias_name(md5, alias)
+	return os.path.isfile(pathname)
+
+###
 ### Do we want this file?
 ### (Used to indicate if a file qualifies as an audio file)
 ###
@@ -45,7 +85,7 @@ for rootname in ROOTS:
 	for (dirpath, dirnames, filenames) in os.walk(rootname):
 		pathnames.extend([ dirpath + "/" + a for a in filenames if want(dirpath + "/" + a)])
 
-	REPOSITORY = rootname + "/" + REPOSITORY_BASE
+	REPOSITORY = REPOSITORY_BASE
 	PICKLE_FILE = REPOSITORY + "/" + "hash_values.pickle"
 
 	print "  creating hash folders..."

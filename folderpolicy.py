@@ -61,11 +61,13 @@ def walk_folder(folder, policy=[]):
 			fullpath = os.path.join(folder, name)
 			if os.path.islink(fullpath):
 				next
-			elif os.path.isdir(fullpath):
+			if not meets_policy(fullpath, policy):
+				violations.append("{0} is not allowed in {1}".format(name, folder))
+				continue
+			# If we made it this far, it meets the policy. If it is a folder, go into it.
+			if os.path.isdir(fullpath):
 				walk_folder(fullpath, policy)
-			elif os.path.isfile(fullpath):
-				if not meets_policy(fullpath, policy):
-					violations.append("{0} is not allowed in {1}".format(name, folder))
+
 	except OSError as e:
 		# Probably a permission problem
 		pass
@@ -93,6 +95,6 @@ def send_report_to(recipient):
 	s.quit()
 
 
-walk_folder("/Users")
+walk_folder("/Users/jonanderson")
 for line in violations:
 	print line
